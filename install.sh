@@ -32,9 +32,14 @@ fi
 
 say "Building…"
 cd "$SRC"
-./bundle.sh release >/dev/null
+LOG="$(mktemp)"
+if ! ./bundle.sh release >"$LOG" 2>&1; then
+  cat "$LOG" >&2
+  fail "Build failed. Output above."
+fi
+rm -f "$LOG"
 
-say "Installing to $DEST…"
+say "Installing to ${DEST}"
 rm -rf "$DEST"
 cp -R build/Trackr.app "$DEST"
 open "$DEST"
@@ -43,4 +48,4 @@ say ""
 say "Done — look for the quota strip in your menu bar."
 say ""
 say "Start it automatically at login:"
-say "  $SRC/install-login-item.sh"
+say "  ${SRC}/install-login-item.sh"

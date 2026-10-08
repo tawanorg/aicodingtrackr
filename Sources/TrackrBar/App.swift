@@ -23,7 +23,7 @@ final class BarModel: ObservableObject {
             while !Task.isCancelled {
                 guard let self else { return }
                 await self.refresh()
-                let delay = await self.nextDelay()
+                let delay = self.nextDelay()
                 try? await Task.sleep(for: .seconds(delay))
             }
         }

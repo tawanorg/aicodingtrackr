@@ -14,6 +14,10 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Trackr"
 
+# Regenerate the icon only if it is missing, so a normal build stays fast.
+[ -f Resources/Trackr.icns ] || ./make-icon.sh >/dev/null
+cp Resources/Trackr.icns "$APP/Contents/Resources/Trackr.icns"
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -23,6 +27,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleDisplayName</key>      <string>AI Coding Trackr</string>
   <key>CFBundleIdentifier</key>       <string>org.tawanorg.aicodingtrackr</string>
   <key>CFBundleExecutable</key>       <string>Trackr</string>
+  <key>CFBundleIconFile</key>         <string>Trackr</string>
   <key>CFBundlePackageType</key>      <string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
   <key>CFBundleVersion</key>          <string>1</string>

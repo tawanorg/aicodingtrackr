@@ -4,6 +4,13 @@ import TrackrCore
 // A plain-text mirror of the menu bar, so the data layer can be verified
 // without a UI in the loop.
 
+// A side-effect-free flag: no network, no Keychain, no file scan. The Homebrew
+// formula's test needs something safe to run in a sandbox.
+if CommandLine.arguments.dropFirst().contains(where: { $0 == "--version" || $0 == "-v" }) {
+    print("AI Coding Trackr \(trackrVersion)")
+    exit(0)
+}
+
 let now = Date()
 let report = await Tracker().refresh(now: now)
 

@@ -1,5 +1,7 @@
 import Foundation
 
+public let trackrVersion = "0.1.0"
+
 public enum Provider: String, Codable, Sendable, CaseIterable {
     case claude, codex, copilot
 

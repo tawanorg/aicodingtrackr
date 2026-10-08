@@ -97,7 +97,7 @@ final class BarModel: ObservableObject {
     var title: String {
         guard let accounts = report?.accounts, !accounts.isEmpty else { return "Trackr" }
         return accounts.map { account in
-            let tag = account.ref.provider == .claude ? "CL" : "CX"
+            let tag = account.ref.provider.tag
             guard let binding = account.binding else { return "\(tag) —" }
             if binding.hasReset { return "\(tag) ✓" }
             return "\(tag) \(Int(binding.percentUsed))%"

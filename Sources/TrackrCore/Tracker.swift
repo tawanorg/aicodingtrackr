@@ -4,15 +4,17 @@ import Foundation
 public struct Tracker: Sendable {
     public let claude: ClaudeProvider
     public let codex: CodexProvider
+    public let copilot: CopilotProvider
     public let store: SnapshotStore
     public let nicknames: NicknameStore
 
     public init(claude: ClaudeProvider = .init(),
                 codex: CodexProvider = .init(),
+                copilot: CopilotProvider = .init(),
                 store: SnapshotStore = .init(),
                 nicknames: NicknameStore = .init()) {
-        self.claude = claude; self.codex = codex; self.store = store
-        self.nicknames = nicknames
+        self.claude = claude; self.codex = codex; self.copilot = copilot
+        self.store = store; self.nicknames = nicknames
     }
 
     public struct Report: Sendable {
@@ -48,6 +50,20 @@ public struct Tracker: Sendable {
                 // throttling, so a non-positive hint must not reset our own backoff.
                 backoff = fetchError.retryAfter.flatMap { $0 > 0 ? $0 : nil } ?? 600
             }
+        }
+
+        // Copilot: live via the gh CLI. Absent gh, the provider is simply skipped
+        // rather than nagging for a credential we do not need.
+        do {
+            let snapshot = try await copilot.fetch()
+            if !snapshot.windows.isEmpty {
+                observed[snapshot.ref.key] = snapshot
+                store.record(snapshot)
+            }
+        } catch CopilotProvider.FetchError.ghNotFound {
+            // Not an error: plenty of people do not use Copilot.
+        } catch {
+            warnings.append("Copilot read failed: \(error.localizedDescription)")
         }
 
         // Everything else falls back to its last known reading. These are still

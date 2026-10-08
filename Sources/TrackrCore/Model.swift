@@ -1,8 +1,24 @@
 import Foundation
 
 public enum Provider: String, Codable, Sendable, CaseIterable {
-    case claude, codex
-    public var display: String { self == .claude ? "Claude" : "Codex" }
+    case claude, codex, copilot
+
+    public var display: String {
+        switch self {
+        case .claude:  "Claude"
+        case .codex:   "Codex"
+        case .copilot: "Copilot"
+        }
+    }
+
+    /// Two-letter tag for the menu bar strip, where space is scarce.
+    public var tag: String {
+        switch self {
+        case .claude:  "CL"
+        case .codex:   "CX"
+        case .copilot: "CP"
+        }
+    }
 }
 
 /// Stable identity for one account. `id` is the provider's own account id, so it

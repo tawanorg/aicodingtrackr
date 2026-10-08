@@ -64,8 +64,8 @@ open build/Trackr.app
 - **Name your accounts.** Click any account name and type. `unidentified · pro`
   becomes `side-project`. Names persist across logout and login. Submit an empty
   name to clear it.
-- **Read the strip.** `CL` is Claude, `CX` is Codex. A number is percent *used*;
-  `✓` means that account's window has reset and it is ready.
+- **Read the strip.** `CL` is Claude, `CX` is Codex, `CP` is Copilot. A number is
+  percent *used*; `✓` means that account's window has reset and it is ready.
 - Trackr shows the numbers and stays out of the way. Which account to use is
   your call.
 
@@ -75,6 +75,11 @@ open build/Trackr.app
 |---|---|---|---|
 | Claude Code | `GET /api/oauth/usage` with the OAuth token Claude Code already stores in your login Keychain | yes | exact, live |
 | Codex | `rate_limits` in `~/.codex/sessions/**/rollout-*.jsonl` | **none** | exact for the logged-in account |
+| GitHub Copilot | `gh api /copilot_internal/user` — chat, completions and premium interactions against their monthly reset | yes, via `gh` | exact, live |
+
+Copilot uses the `gh` CLI you have already authenticated rather than asking for a
+GitHub token of its own. No `gh`, or logged out, and the provider is skipped
+silently — not everyone uses Copilot.
 
 Codex deliberately makes **no** network call. It exposes no read-only usage API —
 rate limits only ride along on real inference responses — so probing one would
@@ -129,9 +134,10 @@ address, so the window is safe to screenshot or screen-share.
   collapse into one entry — a labelled heuristic, not an identity.
 - **Codex cloud tasks** (run from the ChatGPT web UI) spend the same quota but
   write no local rollout, so the local reading can understate usage.
-- **`/api/oauth/usage` is unofficial** and rate-limits its callers. Trackr polls
-  every 5 minutes and backs off when throttled; any failure degrades to the last
-  stored snapshot rather than breaking the display.
+- **`/api/oauth/usage` and `/copilot_internal/user` are unofficial** endpoints and
+  can change without notice; the Claude one also rate-limits its callers. Trackr
+  polls every 10 minutes and backs off when throttled, and any failure degrades to
+  the last stored snapshot rather than breaking the display.
 - **Reading the Keychain prompts once.** That is a one-off macOS consent dialog,
   not a login. Both the app and the CLI are ad-hoc signed with stable identifiers
   so the grant survives rebuilds — an unsigned binary gets a new identity every
@@ -149,6 +155,7 @@ Sources/TrackrCore/
   ClaudeProvider.swift  Keychain read + usage endpoint + backoff
   CodexProvider.swift   rollout scan, cached headers, tail-parsed rate limits
   SnapshotStore.swift   append-only history
+  CopilotProvider.swift Copilot quota via the gh CLI
   Nicknames.swift       user-chosen account names
   Tracker.swift         merge live + cached, order, format
 Sources/trackr/         text mirror of the panel

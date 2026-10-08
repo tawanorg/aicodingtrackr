@@ -60,7 +60,7 @@ public struct Tracker: Sendable {
         }
 
         if merged.isEmpty {
-            warnings.append("No accounts seen yet. Use each account once while KeepTrack runs.")
+            warnings.append("No accounts seen yet. Use each account once while Trackr runs.")
         }
 
         let accounts = merged.values

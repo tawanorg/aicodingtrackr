@@ -17,7 +17,7 @@ struct MenuView: View {
             } else {
                 Text("No accounts observed yet.")
                     .font(.callout).foregroundStyle(.secondary)
-                Text("Use each account once while KeepTrack is running — it captures the reading before login overwrites it.")
+                Text("Use each account once while Trackr is running — it captures the reading before login overwrites it.")
                     .font(.caption).foregroundStyle(.tertiary).fixedSize(horizontal: false, vertical: true)
             }
 

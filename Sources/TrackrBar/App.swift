@@ -67,6 +67,16 @@ final class BarModel: ObservableObject {
     func refresh() async {
         guard !isRefreshing else { return }
         isRefreshing = true
+
+        // Paint what is already known before touching the network or the Keychain.
+        // Reading the Keychain can block indefinitely behind a macOS consent
+        // dialog, and without this the panel sat on "no accounts observed" while
+        // four of them were sitting in the store.
+        if report == nil {
+            let cached = tracker.resolveCached()
+            if !cached.accounts.isEmpty { report = cached }
+        }
+
         let fresh = await tracker.refresh()
         report = fresh
         lastError = fresh.warnings.first

@@ -133,8 +133,10 @@ address, so the window is safe to screenshot or screen-share.
   every 5 minutes and backs off when throttled; any failure degrades to the last
   stored snapshot rather than breaking the display.
 - **Reading the Keychain prompts once.** That is a one-off macOS consent dialog,
-  not a login. The bundle is ad-hoc signed with a stable identity so the grant
-  survives rebuilds.
+  not a login. Both the app and the CLI are ad-hoc signed with stable identifiers
+  so the grant survives rebuilds — an unsigned binary gets a new identity every
+  time it is compiled, and macOS would ask again each time. If a run ever seems to
+  hang, look for a Keychain dialog hiding behind another window.
 - **macOS only.** Windows is feasible — Codex writes identical rollouts under
   `%USERPROFILE%\.codex\` and Claude Code keeps credentials in a file there — but
   the UI layer needs rewriting. Tracked in [issues](https://github.com/tawanorg/aicodingtrackr/issues).

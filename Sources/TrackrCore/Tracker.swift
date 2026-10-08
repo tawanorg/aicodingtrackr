@@ -44,7 +44,9 @@ public struct Tracker: Sendable {
             warnings.append("Claude live read failed: \(error.localizedDescription)")
             if let fetchError = error as? ClaudeProvider.FetchError,
                case .rateLimited = fetchError {
-                backoff = fetchError.retryAfter ?? 600
+                // The endpoint has been seen returning `retry-after: 0` while still
+                // throttling, so a non-positive hint must not reset our own backoff.
+                backoff = fetchError.retryAfter.flatMap { $0 > 0 ? $0 : nil } ?? 600
             }
         }
 
@@ -74,6 +76,29 @@ public struct Tracker: Sendable {
 
         return Report(accounts: accounts, warnings: warnings, generatedAt: now,
                       backoffHint: backoff)
+    }
+}
+
+extension Tracker {
+    /// Rebuilds the view from stored snapshots alone — no network, no rollout scan.
+    ///
+    /// Every reset time is absolute, so counting down and flipping an expired
+    /// window to "ready" is pure arithmetic against the clock. Only *new usage*
+    /// needs a fetch, which is why the UI can tick every few seconds while the
+    /// network is touched once in ten minutes.
+    public func resolveCached(now: Date = Date()) -> Report {
+        let accounts = store.latest().values
+            .map { snapshot in
+                ResolvedAccount(snapshot: snapshot, now: now,
+                                nickname: nicknames.name(for: snapshot.ref.key))
+            }
+            .sorted {
+                if $0.ref.provider != $1.ref.provider {
+                    return $0.ref.provider.rawValue < $1.ref.provider.rawValue
+                }
+                return $0.headroom > $1.headroom
+            }
+        return Report(accounts: accounts, warnings: [], generatedAt: now, backoffHint: nil)
     }
 }
 

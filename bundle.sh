@@ -7,6 +7,7 @@ CONFIG="${1:-release}"
 APP="build/Trackr.app"
 
 swift build -c "$CONFIG" --product TrackrBar
+swift build -c "$CONFIG" --product trackr
 BIN="$(swift build -c "$CONFIG" --show-bin-path)/TrackrBar"
 
 rm -rf "$APP"
@@ -36,5 +37,14 @@ PLIST
 # ACL binds its consent to. Without it every rebuild re-prompts for access.
 codesign --force --sign - --identifier org.tawanorg.aicodingtrackr "$APP" >/dev/null 2>&1 \
   || echo "warning: ad-hoc signing failed; Keychain may re-prompt each launch"
+
+# The CLI reads the same Keychain item. Signing it with a stable identifier means
+# macOS asks for consent once rather than on every rebuild, since an unsigned
+# binary gets a fresh identity each time it is compiled.
+CLI="$(swift build -c "$CONFIG" --show-bin-path)/trackr"
+if [ -f "$CLI" ]; then
+  codesign --force --sign - --identifier org.tawanorg.aicodingtrackr.cli "$CLI" >/dev/null 2>&1 \
+    || echo "warning: could not sign the CLI; it may re-prompt for Keychain access"
+fi
 
 echo "built $APP"

@@ -14,9 +14,17 @@ final class BarModel: ObservableObject {
     /// inference — but it rate-limits its own callers, and being throttled costs
     /// the live reading. Five minutes is well inside any window that matters: the
     /// shortest quota window is five hours.
-    private let baseInterval: TimeInterval = 300
-    private let maxInterval: TimeInterval = 1800
+    /// The shortest quota window is five hours, so fetching more often than this
+    /// buys nothing and risks being throttled — which costs the live reading.
+    private let baseInterval: TimeInterval = 600
+    private let maxInterval: TimeInterval = 3600
     private var backoff: TimeInterval = 0
+
+    /// Local re-resolve cadence. Cheap: it reads stored snapshots and compares
+    /// their absolute reset times to the clock, so countdowns stay smooth and an
+    /// expiring window flips to "ready" promptly without any network call.
+    private let tickInterval: TimeInterval = 20
+    private var ticker: Task<Void, Never>?
 
     init() {
         poller = Task { [weak self] in
@@ -27,9 +35,25 @@ final class BarModel: ObservableObject {
                 try? await Task.sleep(for: .seconds(delay))
             }
         }
+        ticker = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(self?.tickInterval ?? 20))
+                guard let self else { return }
+                self.tick()
+            }
+        }
     }
 
-    deinit { poller?.cancel() }
+    deinit { poller?.cancel(); ticker?.cancel() }
+
+    /// Refreshes the countdowns between network fetches without clobbering a live
+    /// reading: only windows and staleness are recomputed, from stored data.
+    private func tick() {
+        guard !isRefreshing, report != nil else { return }
+        let local = tracker.resolveCached()
+        guard !local.accounts.isEmpty else { return }
+        report?.accounts = local.accounts
+    }
 
     private func nextDelay() -> TimeInterval {
         max(baseInterval, backoff)

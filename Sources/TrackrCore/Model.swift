@@ -73,7 +73,11 @@ public struct ResolvedWindow: Sendable {
 
     public var headroom: Double { max(0, 100 - percentUsed) }
 
-    public init(window: QuotaWindow, observedLive: Bool, now: Date) {
+    /// A reading is exact when the window has provably reset, or when it was taken
+    /// recently enough that usage cannot meaningfully have moved since. Otherwise
+    /// usage can only have gone up, so the number is a floor, not a value.
+    public init(window: QuotaWindow, observedAt: Date, now: Date,
+                freshFor: TimeInterval = 900) {
         self.window = window
         if now >= window.resetsAt {
             self.percentUsed = 0
@@ -81,7 +85,7 @@ public struct ResolvedWindow: Sendable {
             self.hasReset = true
         } else {
             self.percentUsed = window.percentUsed
-            self.certainty = observedLive ? .exact : .atLeast
+            self.certainty = now.timeIntervalSince(observedAt) <= freshFor ? .exact : .atLeast
             self.hasReset = false
         }
     }
@@ -113,8 +117,9 @@ public struct ResolvedAccount: Sendable {
         self.source = snapshot.source
         self.observedAt = snapshot.observedAt
         self.note = snapshot.note
-        let live = snapshot.source == .live || snapshot.source == .disk
-        self.windows = snapshot.windows.map { ResolvedWindow(window: $0, observedLive: live, now: now) }
+        self.windows = snapshot.windows.map {
+            ResolvedWindow(window: $0, observedAt: snapshot.observedAt, now: now)
+        }
     }
 
     /// The window closest to blocking you — what actually gates the next request.
